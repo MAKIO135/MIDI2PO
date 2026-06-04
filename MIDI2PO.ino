@@ -91,28 +91,28 @@ static uint8_t midiDevAddr = 0;
 static bool core0_booting = true;
 static bool core1_booting = true;
 
-#define DACPin 0
+#define DAC_PIN 0
 int clockCount = 0;
 bool started = false;
 bool tick = false;
-long tickTS;
 
-#define BUTTONPin A1
+#define BUTTON_PIN A1
 int btnState = 1;
-#define NSPEEDS 3
+
+#define NSPEEDS 3 // number of speeds to cycle through
 int divs[NSPEEDS] = { 6, 12, 24 }; // x2, normal, ÷2 speeds
-int divIndex = 1; // by default sync signals are sent every 12 MIDI ticks
+int divIndex = 1; // start with normal speed
 
 /* MIDI IN MESSAGE REPORTING */
 static void onMidiClock() {
   if(started) {
     if(clockCount == 0) {
       tick = true;
-      analogWrite(DACPin, 676); // 1024 / 5 * 3.3v
+      analogWrite(DAC_PIN, 676); // 1024 / 5 * 3.3v
     }
     else {
       tick = false;
-      analogWrite(DACPin, 0);
+      analogWrite(DAC_PIN, 0);
     }
     clockCount = (++clockCount) % divs[divIndex];
   }
@@ -135,7 +135,7 @@ static void onMidiStop() {
 static void registerMidiInCallbacks() {
   auto intf = usbhMIDI.getInterfaceFromDeviceAndCable(midiDevAddr, 0);
   if (intf == nullptr) return;
-  intf->setHandleClock(onMidiClock);                      // 0xF8
+  intf->setHandleClock(onMidiClock);            // 0xF8
   intf->setHandleStart(onMidiStart);            // 0xFA
   intf->setHandleContinue(onMidiContinue);      // 0xFB
   intf->setHandleStop(onMidiStop);              // 0xFC
@@ -201,10 +201,10 @@ void setup() {
   MIDIuart.setHandleStop(onMidiStop);         // 0xFC
 
   pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(DACPin, OUTPUT);
-  analogWrite(DACPin, 0);
+  pinMode(DAC_PIN, OUTPUT);
+  analogWrite(DAC_PIN, 0);
 
-  pinMode(BUTTONPin, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   core0_booting = false;
   while (core1_booting);
@@ -216,7 +216,7 @@ void loop() {
   MIDIuart.read();
   digitalWrite(LED_BUILTIN, tick ? HIGH : LOW);
 
-	int state = digitalRead(BUTTONPin);
+	int state = digitalRead(BUTTON_PIN);
   if(state == 0 && btnState == 1) {
     digitalWrite(LED_BUILTIN, HIGH);
     divIndex = (++divIndex) % NSPEEDS;
