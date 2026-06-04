@@ -99,8 +99,9 @@ long tickTS;
 
 #define BUTTONPin A1
 int btnState = 1;
-int divs[] = { 6, 12, 24 }; //
-int divIndex = 1; // by default sync signals are sent every 12 MIDI clock signals
+#define NSPEEDS 3
+int divs[NSPEEDS] = { 6, 12, 24 }; // x2, normal, ÷2 speeds
+int divIndex = 1; // by default sync signals are sent every 12 MIDI ticks
 
 /* MIDI IN MESSAGE REPORTING */
 static void onMidiClock() {
@@ -218,7 +219,7 @@ void loop() {
 	int state = digitalRead(BUTTONPin);
   if(state == 0 && btnState == 1) {
     digitalWrite(LED_BUILTIN, HIGH);
-    divIndex = (++divIndex) % 3;
+    divIndex = (++divIndex) % NSPEEDS;
     btnState = 0;
   }
   else if(state == 1 && btnState == 0) {
